@@ -1,0 +1,1117 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>美元指數 × 利率 × 匯率 × 質押壓力測試模擬器（雙手群友版）</title>
+  <style>
+    :root {
+      --bg: #0b1120; --card: #111827; --inner: #172236; --bdr: #263654;
+      --txt: #e2e8f0; --hi: #f8fafc; --mut: #94a3b8;
+      --cyan: #38bdf8; --em: #10b981; --grn: #22c55e; --amb: #f59e0b;
+      --org: #fb923c; --red: #ef4444; --rose: #f43f5e; --vio: #a78bfa;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+    html, body {
+      width: 100%; max-width: 100%; overflow-x: hidden;
+      background: var(--bg); color: var(--txt);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+      font-size: 15px; line-height: 1.42; -webkit-font-smoothing: antialiased;
+    }
+    .num { font-variant-numeric: tabular-nums; }
+    .pos { color: var(--grn); } .neg { color: var(--rose); } .neu { color: var(--hi); }
+    .mut { color: var(--mut); } .cyan { color: var(--cyan); } .amb { color: var(--amb); }
+    .org { color: var(--org); } .vio { color: var(--vio); } .em { color: var(--em); }
+    .app { width: 100%; max-width: 520px; margin: 0 auto; padding: 8px 10px 24px; }
+    #err-bar {
+      display: none; margin-bottom: 8px; padding: 10px; border-radius: 10px;
+      background: rgba(239,68,68,.2); border: 1px solid var(--red); color: #fecaca; font-size: 13px; font-weight: 700;
+    }
+    header { padding: 2px 2px 6px; margin-bottom: 8px; border-bottom: 1px solid var(--bdr); }
+    header h1 { font-size: 17.5px; font-weight: 800; color: var(--hi); line-height: 1.3; }
+    .h-sub { margin-top: 2px; font-size: 12.5px; color: var(--mut); }
+    .card {
+      background: var(--card); border: 1px solid var(--bdr);
+      border-radius: 12px; padding: 10px; margin-bottom: 8px;
+    }
+    .stitle {
+      font-size: 15.5px; font-weight: 800; color: var(--hi); margin-bottom: 8px;
+      display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap;
+    }
+    .ssub { font-size: 12.5px; font-weight: 600; color: var(--mut); }
+
+    /* 頂部匯率英雄區 */
+    .fx-top { display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .fx-val-wrap { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; }
+    .fx-big { font-size: 24px; font-weight: 800; color: var(--hi); line-height: 1.1; }
+    .ruler-wrap { padding-top: 14px; margin: 2px 0 7px; }
+    .ruler-bar {
+      position: relative; height: 8px; border-radius: 999px;
+      background: linear-gradient(90deg, #06b6d4 0%, #22d3ee 16%, #10b981 31.63%, #eab308 50%, #f97316 70%, #ef4444 90%, #b91c1c 100%);
+    }
+    .ruler-base { position: absolute; left: 31.6327%; top: -3px; bottom: -3px; width: 2px; background: #fff; }
+    .ruler-base span {
+      position: absolute; top: -15px; left: 50%; transform: translateX(-50%);
+      font-size: 11px; font-weight: 700; color: var(--hi); white-space: nowrap;
+    }
+    .ruler-dot {
+      position: absolute; top: 50%; width: 15px; height: 15px; border-radius: 50%;
+      background: #fff; border: 2.5px solid var(--bg); box-shadow: 0 0 8px rgba(255,255,255,.9);
+      transform: translate(-50%,-50%); transition: left .06s linear;
+    }
+    .ruler-ticks { display: flex; justify-content: space-between; margin-top: 4px; font-size: 11.5px; font-weight: 700; color: var(--mut); }
+    .fx-box {
+      background: rgba(16,185,129,.08); border: 1px solid rgba(16,185,129,.35);
+      border-radius: 10px; padding: 8px 9px; margin-bottom: 8px;
+    }
+    .row-between { display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .fx-btns { display: grid; grid-template-columns: repeat(5, minmax(0,1fr)); gap: 5px; margin-top: 6px; }
+
+    /* 按鈕、輸入與滑桿 */
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center;
+      min-height: 32px; padding: 4px 6px; border-radius: 8px;
+      border: 1px solid var(--bdr); background: var(--inner); color: var(--hi);
+      font-size: 13.5px; font-weight: 700; cursor: pointer; text-align: center; user-select: none;
+    }
+    .btn:active { transform: scale(.98); }
+    .btn.act { background: rgba(56,189,248,.22); border-color: var(--cyan); color: #fff; }
+    .btn.act-amb { background: rgba(245,158,11,.22); border-color: var(--amb); color: #fff; }
+    .btn.act-red { background: rgba(239,68,68,.22); border-color: var(--red); color: #fff; }
+    .fx-btns .btn { background: #0f1a2d; }
+    .fx-btns .btn.fx32 { background: rgba(56,189,248,.14); border-color: var(--cyan); color: var(--cyan); font-size: 13px; }
+
+    .nwrap { display: inline-flex; align-items: center; gap: 4px; flex-shrink: 0; }
+    .ninp {
+      width: 78px; height: 34px; padding: 3px 7px; border-radius: 8px;
+      border: 1px solid var(--bdr); background: #0b1324; color: var(--hi);
+      font-family: inherit; font-size: 14.5px; font-weight: 800; font-variant-numeric: tabular-nums;
+      text-align: right; outline: none;
+    }
+    .ninp:focus { border-color: var(--cyan); box-shadow: 0 0 0 2px rgba(56,189,248,.25); }
+    .ninp.xs { width: 64px; } .ninp.sm { width: 70px; }
+    .ninp.fx { width: 84px; font-size: 15.5px; border-color: rgba(16,185,129,.55); }
+    .ninp.yuan { width: 138px; font-size: 14px; }
+    .unit { font-size: 13.5px; font-weight: 700; color: var(--mut); white-space: nowrap; }
+
+    input[type="range"] {
+      -webkit-appearance: none; appearance: none; width: 100%; height: 7px; margin: 5px 0;
+      border-radius: 999px; background: #24324d; outline: none; cursor: pointer; touch-action: pan-y; display: block;
+    }
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none; appearance: none; width: 20px; height: 20px; border-radius: 50%;
+      background: #fff; border: 2.5px solid var(--cyan); box-shadow: 0 0 6px rgba(56,189,248,.45);
+    }
+    input[type="range"]::-moz-range-thumb {
+      width: 20px; height: 20px; border-radius: 50%; background: #fff; border: 2.5px solid var(--cyan);
+    }
+    .fx-box input[type="range"]::-webkit-slider-thumb { border-color: var(--em); }
+    .fx-box input[type="range"]::-moz-range-thumb { border-color: var(--em); }
+
+    /* KPI 與膠囊 */
+    .grid2 { display: grid; grid-template-columns: repeat(2, minmax(0,1fr)); gap: 7px; }
+    .grid3 { display: grid; grid-template-columns: repeat(3, minmax(0,1fr)); gap: 6px; }
+    .kbox { background: var(--inner); border: 1px solid var(--bdr); border-radius: 10px; padding: 7px 9px; min-width: 0; }
+    .klbl { font-size: 12.5px; color: var(--mut); display: flex; justify-content: space-between; align-items: center; gap: 4px; flex-wrap: wrap; }
+    .kval { font-size: 20px; font-weight: 800; margin-top: 3px; line-height: 1.15; word-break: break-word; }
+    .ksub { font-size: 12.5px; color: var(--mut); margin-top: 3px; line-height: 1.3; word-break: break-word; }
+
+    .pill {
+      display: inline-flex; align-items: center; gap: 3px; padding: 2px 8px; border-radius: 999px;
+      font-size: 12.5px; font-weight: 800; white-space: nowrap;
+    }
+    .st-safe { background: rgba(16,185,129,.16); color: var(--grn); border: 1px solid rgba(16,185,129,.45); }
+    .st-warn { background: rgba(245,158,11,.16); color: var(--amb); border: 1px solid rgba(245,158,11,.45); }
+    .st-high { background: rgba(251,146,60,.18); color: var(--org); border: 1px solid rgba(251,146,60,.45); }
+    .st-call { background: rgba(239,68,68,.22); color: #f87171; border: 1px solid rgba(239,68,68,.55); }
+    .st-cyan { background: rgba(56,189,248,.16); color: var(--cyan); border: 1px solid rgba(56,189,248,.45); }
+    .tag-sm { display: inline-block; padding: 2px 7px; border-radius: 6px; background: rgba(56,189,248,.16); color: var(--cyan); font-size: 12.5px; font-weight: 800; }
+    .tag-warn { display: none; padding: 2px 7px; border-radius: 6px; background: rgba(251,146,60,.2); border: 1px solid rgba(251,146,60,.5); color: var(--org); font-size: 12px; font-weight: 800; }
+
+    /* 總經情境 3+2 與折疊 */
+    .pgrid { display: grid; grid-template-columns: repeat(6, minmax(0,1fr)); gap: 6px; margin-bottom: 8px; }
+    .pgrid .btn { grid-column: span 2; font-size: 13px; min-height: 34px; }
+    .pgrid .btn.s3 { grid-column: span 3; }
+    .sw { display: inline-flex; align-items: center; gap: 6px; font-size: 13px; font-weight: 700; color: var(--amb); cursor: pointer; }
+    .sw input { width: 18px; height: 18px; accent-color: var(--em); }
+    details.mdet { border-top: 1px solid var(--bdr); padding-top: 6px; }
+    details.mdet summary {
+      list-style: none; display: flex; justify-content: space-between; align-items: center;
+      min-height: 32px; font-size: 13px; font-weight: 700; color: var(--cyan); cursor: pointer; gap: 6px; flex-wrap: wrap;
+    }
+    details.mdet summary::-webkit-details-marker { display: none; }
+    .mcell { background: rgba(11,17,32,.68); border: 1px solid var(--bdr); border-radius: 9px; padding: 7px 8px; }
+    .chead { display: flex; justify-content: space-between; align-items: center; gap: 6px; margin-bottom: 4px; font-size: 14px; flex-wrap: wrap; }
+
+    /* 置頂單行三分頁 */
+    .tabs {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px;
+      margin-bottom: 8px; position: sticky; top: 0; z-index: 25; background: var(--bg); padding: 5px 0;
+    }
+    .tbtn {
+      min-height: 40px; padding: 6px 4px; border-radius: 10px;
+      border: 1px solid var(--bdr); background: var(--card); color: var(--mut);
+      font-size: 14px; font-weight: 800; cursor: pointer; text-align: center;
+    }
+    .tbtn.act { background: var(--cyan); border-color: var(--cyan); color: #061224; }
+    .tpanel { display: none; } .tpanel.act { display: block; }
+
+    /* 6 標的單欄無截斷卡片 & 2 列權重 */
+    .alist { display: flex; flex-direction: column; gap: 6px; }
+    .acard { background: var(--inner); border: 1px solid var(--bdr); border-radius: 10px; padding: 8px 10px; }
+    .aname { font-size: 14.5px; font-weight: 800; color: var(--hi); display: flex; align-items: center; gap: 6px; line-height: 1.3; }
+    .dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; }
+    .aret { font-size: 16px; font-weight: 800; flex-shrink: 0; }
+    .arow2 {
+      display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: 5px; padding-top: 5px;
+      border-top: 1px solid rgba(148,163,184,.16); font-size: 13px; color: var(--mut);
+    }
+    .wblk { padding: 6px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+    .wblk:last-child { border-bottom: none; padding-bottom: 2px; }
+    .scell { background: rgba(11,17,32,.72); border: 1px solid var(--bdr); border-radius: 9px; padding: 6px; text-align: center; }
+    .scell .sl { font-size: 12.5px; color: var(--mut); }
+    .scell .sv { font-size: 15px; font-weight: 800; margin-top: 2px; }
+
+    /* SVG 圖表容器 */
+    .cbox { display: block; width: 100%; min-height: 185px; background: var(--bg); border: 1px solid var(--bdr); border-radius: 10px; padding: 8px; overflow: hidden; }
+    .lwrap { display: flex; flex-wrap: wrap; gap: 5px; margin-bottom: 8px; }
+    .lpill {
+      display: inline-flex; align-items: center; gap: 5px; min-height: 30px; padding: 3px 9px;
+      border-radius: 999px; border: 1px solid var(--bdr); background: var(--inner); color: var(--hi);
+      font-size: 12.5px; font-weight: 700; cursor: pointer;
+    }
+    .lpill.off { opacity: .35; text-decoration: line-through; }
+
+    /* 質押壓測與套娃 */
+    .mdesc { font-size: 13px; color: var(--mut); background: rgba(11,17,32,.68); border: 1px solid var(--bdr); border-radius: 8px; padding: 6px 9px; margin: 7px 0 8px; }
+    .lpanel { display: none; margin-bottom: 9px; padding: 9px; border-radius: 10px; background: rgba(239,68,68,.08); border: 1px solid rgba(239,68,68,.42); }
+    .lpanel.show { display: block; }
+    .ltbl-wrap { margin-top: 8px; border-radius: 8px; border: 1px solid var(--bdr); background: rgba(11,17,32,.85); overflow-x: auto; }
+    table.ltbl { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    table.ltbl th, table.ltbl td { padding: 5px 4px; text-align: right; border-bottom: 1px solid rgba(40,56,88,.65); }
+    table.ltbl th { background: rgba(17,24,39,.95); color: var(--mut); font-weight: 700; }
+    table.ltbl th:first-child, table.ltbl td:first-child { text-align: center; }
+    table.ltbl tr:last-child td { border-bottom: none; background: rgba(239,68,68,.14); font-weight: 800; }
+
+    .sbox { padding: 8px 9px; border-radius: 10px; margin-bottom: 9px; }
+    .sbox.amb-b { background: rgba(245,158,11,.07); border: 1px solid rgba(245,158,11,.34); }
+    .sbox.cyn-b { background: rgba(56,189,248,.07); border: 1px solid rgba(56,189,248,.36); }
+    .vcard { margin-top: 8px; padding: 8px 9px; border-radius: 8px; background: rgba(11,17,32,.85); border: 1px solid var(--bdr); font-size: 13px; }
+    .vline { display: flex; justify-content: space-between; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .vline + .vline { margin-top: 5px; padding-top: 5px; border-top: 1px dashed rgba(148,163,184,.25); }
+    .lalert { display: none; margin-top: 6px; padding: 7px 9px; border-radius: 7px; background: rgba(239,68,68,.16); border: 1px solid rgba(239,68,68,.45); color: #fecaca; font-size: 12.5px; }
+    .lalert.show { display: block; }
+
+    /* 股債分拆耐震 */
+    .sov { padding: 8px 10px; border-radius: 9px; background: rgba(16,185,129,.12); border: 1px solid rgba(16,185,129,.42); color: #dcfce7; font-size: 13.5px; font-weight: 700; margin-bottom: 8px; }
+    .sov.dng { background: rgba(239,68,68,.16); border-color: rgba(239,68,68,.55); color: #fecaca; }
+    .btrack { width: 100%; height: 6px; border-radius: 999px; background: var(--bg); overflow: hidden; margin-top: 5px; }
+    .bfill { height: 100%; border-radius: 999px; }
+    .srows { margin-top: 8px; border: 1px solid var(--bdr); border-radius: 9px; background: rgba(11,17,32,.65); overflow: hidden; }
+    .sitem { padding: 7px 10px; border-bottom: 1px solid rgba(40,56,88,.55); }
+    .sitem:last-child { border-bottom: none; }
+    .sitem.dim { opacity: .5; }
+    .scross { margin-top: 8px; padding: 7px 10px; border-radius: 8px; background: rgba(245,158,11,.1); border: 1px solid rgba(245,158,11,.35); color: #fde68a; font-size: 13px; }
+
+    /* 極端矩陣與頁尾 */
+    .mcard { background: var(--inner); border: 1px solid var(--bdr); border-radius: 10px; padding: 9px 10px; }
+    .mcard.dng { border-color: rgba(239,68,68,.58); background: rgba(239,68,68,.09); }
+    .mitem { background: rgba(11,17,32,.65); border-radius: 8px; padding: 6px 8px; display: flex; justify-content: space-between; align-items: center; gap: 4px; font-size: 13px; }
+    footer { margin-top: 10px; padding: 8px 10px; border-radius: 9px; background: rgba(148,163,184,.06); border: 1px solid var(--bdr); font-size: 12.5px; color: var(--mut); text-align: center; }
+  </style>
+</head>
+<body>
+  <div class="app">
+    <div id="err-bar" role="alert"></div>
+
+    <header>
+      <h1>美元指數 × 利率 × 匯率 × 質押壓力測試模擬器（雙手群友版）</h1>
+      <div class="h-sub">零外部依賴 · USD/TWD 1~99 雙向反推 · 6 檔股債敏感度 · 質押防重複灌水精算</div>
+    </header>
+
+    <!-- 頂部緊湊匯率英雄區 -->
+    <section class="card">
+      <div class="fx-top num">
+        <div class="fx-val-wrap">
+          <span class="mut" style="font-size:13px;font-weight:700;">USD/TWD</span>
+          <span id="top-fx" class="fx-big">32.00</span>
+          <span id="top-fx-pct" class="neu" style="font-size:14px;font-weight:800;">0.0%</span>
+        </div>
+        <span id="top-fx-zone" class="pill st-warn">中性震盪</span>
+      </div>
+
+      <div class="ruler-wrap">
+        <div class="ruler-bar">
+          <div class="ruler-base"><span>基準32</span></div>
+          <div id="fx-ptr" class="ruler-dot" style="left:31.6327%;"></div>
+        </div>
+        <div class="ruler-ticks num"><span>1</span><span>20</span><span>32</span><span>50</span><span>75</span><span>99</span></div>
+      </div>
+
+      <div class="fx-box">
+        <div class="row-between" style="margin-bottom:4px;">
+          <span class="pos" style="font-size:14px;font-weight:800;">直接調整 USD/TWD (1.00~99.00)</span>
+          <div class="nwrap">
+            <input id="n-fx" type="text" inputmode="decimal" value="32.00" class="ninp fx" aria-label="USD/TWD 匯率" />
+            <span class="unit">元</span>
+          </div>
+        </div>
+        <input id="s-fx" type="range" min="1" max="99" step="0.05" value="32" />
+        <div class="fx-btns">
+          <button type="button" class="btn" data-fx="-1">-1</button>
+          <button type="button" class="btn" data-fx="-0.1">-0.1</button>
+          <button type="button" class="btn fx32" id="b-fx32">32.00</button>
+          <button type="button" class="btn" data-fx="0.1">+0.1</button>
+          <button type="button" class="btn" data-fx="1">+1</button>
+        </div>
+      </div>
+
+      <div class="grid2 num">
+        <div class="kbox">
+          <div class="klbl"><span>組合台幣報酬</span><span id="t-carry" class="amb" style="font-weight:800;">含息收</span></div>
+          <div id="t-pret" class="kval pos">+0.0%</div>
+          <div id="t-psub" class="ksub">息收 5.15% · 存續 8.4年</div>
+        </div>
+        <div class="kbox">
+          <div class="klbl"><span>壓測整戶維持率</span><span id="t-pbdg" class="pill st-safe">🟢 安全</span></div>
+          <div id="t-prat" class="kval pos">200.0%</div>
+          <div id="t-prsub" class="ksub">模式A · 可跌 35.0%</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 總經情境與進階因子 -->
+    <section class="card">
+      <div class="stitle" style="margin-bottom:6px;">
+        <span>總經情境快捷</span>
+        <label class="sw"><input id="chk-carry" type="checkbox" checked /><span>含1年息收</span></label>
+      </div>
+      <div id="preset-btns" class="pgrid"></div>
+      <details class="mdet">
+        <summary>
+          <span id="m-sum" class="num">DXY 104.0 · 10Y 0bp · 背離 0.0 · 利差 0bp</span>
+          <span>微調 ▾</span>
+        </summary>
+        <div class="grid2" style="margin-top:8px;">
+          <div class="mcell">
+            <div class="chead"><span>DXY</span><input id="n-dxy" type="text" inputmode="decimal" value="104.0" class="ninp xs cyan" aria-label="DXY" /></div>
+            <input id="s-dxy" type="range" min="70" max="130" step="0.5" value="104" />
+          </div>
+          <div class="mcell">
+            <div class="chead"><span>美債10Y bp</span><input id="n-y" type="text" inputmode="decimal" value="0" class="ninp xs amb" aria-label="美債10Y bp" /></div>
+            <input id="s-y" type="range" min="-300" max="300" step="5" value="0" />
+          </div>
+          <div class="mcell">
+            <div class="chead"><span>外資背離</span><input id="n-div" type="text" inputmode="decimal" value="0.0" class="ninp xs neg" aria-label="外資背離" /></div>
+            <input id="s-div" type="range" min="-10" max="10" step="0.1" value="0" />
+          </div>
+          <div class="mcell">
+            <div class="chead"><span>信用利差 bp</span><input id="n-sp" type="text" inputmode="decimal" value="0" class="ninp xs vio" aria-label="信用利差 bp" /></div>
+            <input id="s-sp" type="range" min="-150" max="400" step="10" value="0" />
+          </div>
+        </div>
+      </details>
+    </section>
+
+    <!-- 置頂單行三分頁 -->
+    <nav class="tabs" role="tablist">
+      <button type="button" class="tbtn act" data-tab="tab-1">標的敏感度</button>
+      <button type="button" class="tbtn" data-tab="tab-2">質押壓測</button>
+      <button type="button" class="tbtn" data-tab="tab-3">極端矩陣</button>
+    </nav>
+
+    <!-- 分頁一：標的敏感度 -->
+    <section id="tab-1" class="tpanel act">
+      <div class="card">
+        <div class="stitle"><span>六檔標的台幣報酬敏感度</span><span class="ssub">完整拆解不截斷</span></div>
+        <div id="asset-cards" class="alist"></div>
+      </div>
+
+      <div class="card">
+        <div class="stitle"><span>投資組合權重（自動歸一化 100%）</span></div>
+        <div id="mix-btns" class="pgrid"></div>
+        <div id="w-list"></div>
+        <div class="grid3 num" style="margin-top:8px;">
+          <div class="scell"><div class="sl">加權年息</div><div id="sum-y" class="sv amb">5.15%</div></div>
+          <div class="scell"><div class="sl">債存續期</div><div id="sum-d" class="sv cyan">8.4 年</div></div>
+          <div class="scell"><div class="sl">美元曝險</div><div id="sum-u" class="sv em">70%</div></div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="stitle"><span>報酬拆解橫條圖（6 標的＋組合）</span><span class="ssub">單位：%</span></div>
+        <div id="svg-bars" class="cbox"></div>
+      </div>
+
+      <div class="card">
+        <div class="stitle"><span>USD/TWD 1 ~ 99 多線敏感度曲線</span><span class="ssub">點擊圖例開關</span></div>
+        <div id="c-legs" class="lwrap"></div>
+        <div id="svg-lines" class="cbox"></div>
+      </div>
+    </section>
+
+    <!-- 分頁二：質押壓測 -->
+    <section id="tab-2" class="tpanel">
+      <div class="card">
+        <div class="stitle"><span>質押模式與防重複灌水精算</span><span class="ssub">追繳線 130%</span></div>
+        <div class="grid3">
+          <button type="button" id="pm-a" class="btn act">A 實額場外</button>
+          <button type="button" id="pm-b" class="btn">B 單次再投</button>
+          <button type="button" id="pm-c" class="btn">C 重複質押</button>
+        </div>
+        <div id="m-desc" class="mdesc"></div>
+
+        <!-- 模式 C 循環套娃面板 -->
+        <div id="l-panel" class="lpanel">
+          <div class="chead">
+            <span style="font-weight:800;color:#fca5a5;">重複層數 N (2~10層 / ∞)</span>
+            <div class="nwrap">
+              <input id="pn-lay" type="text" inputmode="decimal" value="3" class="ninp xs neg" aria-label="重複層數" />
+              <span class="unit">層</span>
+              <button type="button" id="b-inf" class="btn" style="padding:4px 8px;font-size:12.5px;">極限 ∞</button>
+            </div>
+          </div>
+          <input id="ps-lay" type="range" min="2" max="10" step="1" value="3" />
+          <div class="grid2" style="margin-top:6px;">
+            <button type="button" id="b-ereinv" class="btn act-red">末層併入擔保</button>
+            <button type="button" id="b-ecash" class="btn">末層場外使用</button>
+          </div>
+          <div class="ltbl-wrap">
+            <table class="ltbl num">
+              <thead><tr><th>層</th><th>補擔保</th><th>新增借</th><th>累計擔保</th><th>累計借款</th><th>維持率</th></tr></thead>
+              <tbody id="l-tbody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- 擔保品總市值（元） -->
+        <div style="margin-bottom:9px;">
+          <div class="chead">
+            <span><span id="l-mv">擔保品總市值</span> <span id="r-mv" class="tag-sm num">約 1,000萬</span></span>
+            <div class="nwrap"><input id="pn-mv" type="text" inputmode="decimal" value="10000000" class="ninp yuan cyan" aria-label="擔保品總市值" /><span class="unit">元</span></div>
+          </div>
+          <input id="ps-mv" type="range" min="0" max="1000" step="1" value="450" />
+        </div>
+
+        <!-- 借款成數 & 借款金額（元） -->
+        <div class="sbox amb-b">
+          <div class="chead">
+            <span><span id="l-ltv">借款成數</span> <span id="ltv-w" class="tag-warn">既倉試算 &gt;60%</span></span>
+            <div class="nwrap"><input id="pn-ltv" type="text" inputmode="decimal" value="50" class="ninp xs amb" aria-label="借款成數" /><span class="unit">%</span></div>
+          </div>
+          <input id="ps-ltv" type="range" min="10" max="60" step="0.5" value="50" />
+          <div class="chead" style="margin-top:6px;margin-bottom:0;">
+            <span><span id="l-loan" class="amb" style="font-weight:700;">借款金額</span> <span id="r-loan" class="tag-sm num" style="background:rgba(245,158,11,.16);color:var(--amb);">約 500萬</span></span>
+            <div class="nwrap"><input id="pn-loan" type="text" inputmode="decimal" value="5000000" class="ninp yuan amb" aria-label="借款金額" /><span class="unit">元</span></div>
+          </div>
+        </div>
+
+        <!-- 雙向修正驗證維持率 -->
+        <div class="sbox cyn-b">
+          <div class="chead">
+            <span class="cyan" style="font-weight:800;">基準維持率（雙向修正驗證）</span>
+            <div class="nwrap"><input id="pn-rat" type="text" inputmode="decimal" value="200.00" class="ninp sm cyan" aria-label="基準維持率" /><span class="unit">%</span></div>
+          </div>
+          <input id="ps-rat" type="range" min="110" max="500" step="1" value="200" />
+          <div class="grid2" style="margin-top:6px;">
+            <button type="button" id="b-rloan" class="btn act">反推借款總額</button>
+            <button type="button" id="b-rmv" class="btn">反推擔保市值</button>
+          </div>
+          <div class="vcard num">
+            <div class="vline"><span id="v-bf"></span><span id="v-bb" class="pill st-safe">≥166.7% 新貸</span></div>
+            <div class="vline"><span id="v-sf"></span><span id="v-sd" class="mut" style="font-weight:700;">0.0pp</span></div>
+            <div id="l-alert" class="lalert"></div>
+          </div>
+        </div>
+
+        <!-- 年利率 / 安全警戒線 / 黑天鵝 -->
+        <div class="grid2">
+          <div class="mcell">
+            <div class="chead"><span>年利率 %</span><input id="pn-rate" type="text" inputmode="decimal" value="3.88" class="ninp xs neg" aria-label="質押年利率" /></div>
+            <input id="ps-rate" type="range" min="0.1" max="9.9" step="0.01" value="3.88" />
+          </div>
+          <div class="mcell">
+            <div class="chead"><span>警戒線 %</span><input id="pn-alrt" type="text" inputmode="decimal" value="150" class="ninp xs org" aria-label="安全警戒線" /></div>
+            <input id="ps-alrt" type="range" min="135" max="160" step="1" value="150" />
+          </div>
+        </div>
+        <div class="mcell" style="margin-top:7px;">
+          <div class="chead">
+            <span>額外黑天鵝股災衝擊（疊加 0050 / 2330）</span>
+            <div class="nwrap"><input id="pn-swan" type="text" inputmode="decimal" value="0" class="ninp xs neg" aria-label="黑天鵝股災" /><span class="unit">%</span></div>
+          </div>
+          <input id="ps-swan" type="range" min="-40" max="0" step="1" value="0" />
+        </div>
+      </div>
+
+      <!-- 四大健檢 KPI -->
+      <div class="grid2 num" style="margin-bottom:8px;">
+        <div class="kbox">
+          <div class="klbl"><span>壓測整戶維持率</span><span id="pk-bdg" class="pill st-safe">🟢 安全</span></div>
+          <div id="pk-rat" class="kval pos">200.0%</div>
+          <div id="pk-rsub" class="ksub"></div>
+        </div>
+        <div class="kbox">
+          <div class="klbl"><span>距 130% 耐震</span><span id="pk-lev" class="cyan" style="font-weight:700;">槓桿 2.0x</span></div>
+          <div id="pk-buf" class="kval cyan">可跌 35.0%</div>
+          <div id="pk-bsub" class="ksub"></div>
+        </div>
+        <div class="kbox">
+          <div class="klbl"><span id="pk-albl">尚可增貸</span></div>
+          <div id="pk-act" class="kval pos" style="font-size:19px;">+100萬</div>
+          <div id="pk-asub" class="ksub"></div>
+        </div>
+        <div class="kbox">
+          <div class="klbl"><span>年淨利差現金流</span><span id="pk-cov" class="amb" style="font-weight:800;">2.65x</span></div>
+          <div id="pk-net" class="kval pos">+32.1萬</div>
+          <div id="pk-nsub" class="ksub"></div>
+        </div>
+      </div>
+
+      <!-- 股債分拆耐震跌幅提醒 -->
+      <div class="card num" style="border-color:rgba(56,189,248,.38);">
+        <div class="stitle"><span>📉 距離 130% 追繳線・股債商品分拆耐震跌幅提醒</span></div>
+        <div id="sp-ov" class="sov"></div>
+        <div id="sp-cmp" class="grid2"></div>
+        <div id="sp-rows" class="srows"></div>
+        <div id="sp-xhint" class="scross"></div>
+      </div>
+
+      <!-- 圖表三：整戶維持率 vs USD/TWD 1~99 -->
+      <div class="card">
+        <div class="stitle"><span>整戶維持率 vs USD/TWD (1 ~ 99)</span><span class="ssub">紅虛線130% · 橘虛線警戒</span></div>
+        <div id="svg-pledge" class="cbox"></div>
+      </div>
+    </section>
+
+    <!-- 分頁三：極端矩陣 -->
+    <section id="tab-3" class="tpanel">
+      <div class="card">
+        <div class="stitle"><span>六大極端總經壓力測試矩陣</span><span id="mx-tag" class="ssub">套用模式A</span></div>
+        <div id="mx-cards" class="alist"></div>
+      </div>
+    </section>
+
+    <footer>本模擬器僅供總經敏感度與質押風控教學試算，未計入交易稅費與折溢價，不構成投資或借貸建議。</footer>
+  </div>
+
+  <script>
+    (function () {
+      'use strict';
+      function showErr(e) {
+        var b = document.getElementById('err-bar');
+        if (b) { b.style.display = 'block'; b.textContent = '運算錯誤：' + (e && e.message ? e.message : String(e)); }
+        console.error(e);
+      }
+
+      var BASE_FX = 32, BASE_DXY = 104, MIN_FX = 1, MAX_FX = 99;
+      var MIN_MV = 20000, MAX_MV = 20000000000, LMIN = Math.log10(MIN_MV), LMAX = Math.log10(MAX_MV);
+
+      // 嚴格 6 檔標的（無 00679B）
+      var ASSETS = [
+        { k: 'a0050',   full: '元大台灣50（0050）',         type: 'stock', dur: 0,    carry: 3.0, col: '#818cf8' },
+        { k: 'a2330',   full: '台積電（2330）',             type: 'stock', dur: 0,    carry: 2.2, col: '#e879f9' },
+        { k: 'a00937b', full: '群益ESG投等債20+（00937B）', type: 'bond',  dur: 14.0, carry: 6.0, col: '#38bdf8' },
+        { k: 'a00953b', full: '群益優選非投等債（00953B）', type: 'bond',  dur: 2.8,  carry: 8.0, col: '#f59e0b' },
+        { k: 'a00985b', full: '群益ESG投等債0-5（00985B）', type: 'bond',  dur: 2.8,  carry: 5.5, col: '#2dd4bf' },
+        { k: 'a00865b', full: '國泰US短期公債（00865B）',   type: 'bond',  dur: 0.45, carry: 4.0, col: '#22c55e' }
+      ];
+
+      var PRESETS = [
+        { id: 'neu', name: '基準中性',       dxy: 104, y: 0,    div: 0,    sp: 0 },
+        { id: 'str', name: '強勢美元×提款',  dxy: 112, y: 60,   div: 1.5,  sp: 80 },
+        { id: 'cut', name: '降息×弱勢美元',  dxy: 95,  y: -120, div: -1.0, sp: -20 },
+        { id: 'hrd', name: '硬著陸避險潮',   dxy: 108, y: -150, div: 2.0,  sp: 300, s3: true },
+        { id: 'ext', name: '極端台幣強升',   dxy: 88,  y: -80,  div: -3.0, sp: 0,   s3: true }
+      ];
+
+      var MIXES = [
+        { name: '30/70股債',   w: [20, 10, 35, 15, 15, 5] },
+        { name: '台積核心',     w: [15, 35, 25, 10, 10, 5] },
+        { name: '雙股均衡',     w: [30, 20, 20, 15, 10, 5] },
+        { name: '高息短債防禦', w: [10, 10, 15, 30, 25, 10], s3: true },
+        { name: '全債券梯形',   w: [0,  0,  35, 25, 25, 15], s3: true }
+      ];
+
+      var EXTREMES = [
+        { name: '1. 基準中性（FX 32.0）',             fx: 32.0, y: 0,    div: 0,    sp: 0,   swan: 0 },
+        { name: '2. 強勢美元×提款（FX 35.2）',        fx: 35.2, y: 60,   div: 1.5,  sp: 80,  swan: 0 },
+        { name: '3. 降息×弱勢美元（FX 28.8）',        fx: 28.8, y: -120, div: -1.0, sp: -20, swan: 0 },
+        { name: '4. 硬著陸避險潮（FX 33.8）',         fx: 33.8, y: -150, div: 2.0,  sp: 300, swan: 0 },
+        { name: '5. 極端台幣強升（FX 26.5）',         fx: 26.5, y: -80,  div: -3.0, sp: 0,   swan: 0 },
+        { name: '6. 股匯雙殺黑天鵝（28 / 股災-30%）', fx: 28.0, y: -50,  div: -2.0, sp: 350, swan: -30 }
+      ];
+
+      var st = {
+        fx: 32, dxy: 104, y: 0, div: 0, sp: 0, carry: true, preset: 'neu', tab: 'tab-1',
+        vis: { port: true, a0050: true, a2330: true, a00937b: true, a00953b: true, a00985b: false, a00865b: true },
+        w: { a0050: 20, a2330: 10, a00937b: 35, a00953b: 15, a00985b: 15, a00865b: 5 },
+        p: { mode: 'A', lay: 3, inf: false, end: 'reinv', mv: 10000000, loan: 5000000, rate: 3.88, alrt: 150, rev: 'loan', swan: 0 }
+      };
+
+      var activeSliderId = null, rafId = 0;
+      var $ = function (id) { return document.getElementById(id); };
+      var sn = function (v, f) { return Number.isFinite(v) ? v : (f || 0); };
+      var clp = function (v, a, b) { return Math.min(Math.max(sn(v, a), a), b); };
+      var sTxt = function (id, t) { var e = $(id); if (e) e.textContent = t; };
+      var sHtm = function (id, h) { var e = $(id); if (e) e.innerHTML = h; };
+      var sCls = function (id, c) { var e = $(id); if (e) e.className = c; };
+      var on = function (id, ev, fn) { var e = $(id); if (e) e.addEventListener(ev, fn); };
+      var skey = function (e) { return e ? (e.id || (e.dataset && e.dataset.w ? 'w-' + e.dataset.w : null)) : null; };
+      var syT = function (e, s) { if (e && document.activeElement !== e) e.value = s; };
+      var syS = function (e, v) { if (e && skey(e) !== activeSliderId) e.value = String(v); };
+
+      function pNum(s) {
+        if (typeof s !== 'string') return NaN;
+        var t = s.replace(/,/g, '').trim();
+        return (t === '' || t === '-' || t === '.' || t === '-.') ? NaN : parseFloat(t);
+      }
+      function fPct(v) { var n = sn(v, 0); if (Math.abs(n) < 0.05) n = 0; return (n > 0 ? '+' : '') + n.toFixed(1) + '%'; }
+      function cVal(v) { var n = sn(v, 0); return n > 0.05 ? 'pos' : n < -0.05 ? 'neg' : 'neu'; }
+      function fMon(y, sgn) {
+        var n = sn(y, 0), a = Math.abs(n);
+        var s = sgn ? (n > 0.5 ? '+' : n < -0.5 ? '-' : '') : (n < -0.5 ? '-' : '');
+        if (a >= 1e8) return s + (a / 1e8).toFixed(2) + '億';
+        if (a >= 1e4) { var w = a / 1e4; return s + (w >= 100 ? Math.round(w).toLocaleString('en-US') : w.toFixed(1).replace(/\.0$/, '')) + '萬'; }
+        return s + Math.round(a).toLocaleString('en-US') + '元';
+      }
+
+      function mvToL(mv) { return Math.round(clp(((Math.log10(clp(mv, MIN_MV, MAX_MV)) - LMIN) / (LMAX - LMIN)) * 1000, 0, 1000)); }
+      function lToMv(pos) {
+        var r = clp(pos, 0, 1000) / 1000;
+        if (r <= 0) return MIN_MV; if (r >= 1) return MAX_MV;
+        var raw = Math.pow(10, LMIN + r * (LMAX - LMIN));
+        var step = raw < 1e5 ? 5e3 : raw < 1e6 ? 5e4 : raw < 1e7 ? 1e5 : raw < 1e8 ? 1e6 : raw < 1e9 ? 1e7 : 1e8;
+        return clp(Math.round(raw / step) * step, MIN_MV, MAX_MV);
+      }
+
+      function fxCalc(dxy, div) { return clp(BASE_FX + (sn(dxy, BASE_DXY) - BASE_DXY) * 0.45 + sn(div, 0) * 1.2, MIN_FX, MAX_FX); }
+      function applyFx(raw) {
+        var t = Math.round(clp(raw, MIN_FX, MAX_FX) * 100) / 100;
+        st.fx = t;
+        var base = BASE_FX + (st.dxy - BASE_DXY) * 0.45;
+        var nd = (t - base) / 1.2;
+        if (nd >= -10 && nd <= 10) { st.div = Math.round(nd * 10) / 10; }
+        else {
+          st.div = clp(Math.round(nd * 10) / 10, -10, 10);
+          st.dxy = clp(Math.round((BASE_DXY + (t - BASE_FX - st.div * 1.2) / 0.45) * 2) / 2, 70, 130);
+        }
+        st.preset = null; sched();
+      }
+
+      // 6 標的敏感度計算
+      function calcModel(fx, yBp, div, sp, incC, w, swan) {
+        var sfx = clp(fx, MIN_FX, MAX_FX), fxR = (sfx / BASE_FX - 1) * 100;
+        var dy = clp(sn(yBp, 0) / 100, -3, 3), dSp = clp(sn(sp, 0) / 100, -1.5, 4);
+        var dv = clp(div, -10, 10), sw = clp(swan, -40, 0);
+
+        function bond(rt, cr, cRate) {
+          var c = incC ? cRate : 0, u = clp(rt + cr + c, -95, 300);
+          var tw = clp(((1 + u / 100) * (1 + fxR / 100) - 1) * 100, -98, 500);
+          return { fx: sn(tw - u, 0), rt: sn(rt, 0), cr: sn(cr, 0), c: c, tot: sn(tw, 0) };
+        }
+        var res = {
+          a0050: (function () {
+            var f = clp(0.12 * fxR, -30, 60), rt = clp(-2.2 * dy, -30, 30), cr = clp(-1.8 * dv - 2.5 * dSp + sw, -90, 80), c = incC ? 3.0 : 0;
+            return { fx: f, rt: rt, cr: cr, c: c, tot: clp(f + rt + cr + c, -95, 250) };
+          })(),
+          a2330: (function () {
+            var f = clp(0.45 * fxR, -60, 150), rt = clp(-3.4 * dy - 3.0 * dSp, -60, 60), cr = clp(-1.8 * 1.3 * dv + sw, -90, 90), c = incC ? 2.2 : 0;
+            return { fx: f, rt: rt, cr: cr, c: c, tot: clp(f + rt + cr + c, -95, 300) };
+          })(),
+          a00937b: bond(-14.0 * dy + 1.1 * dy * dy, -14.0 * 0.28 * dSp, 6.0),
+          a00953b: bond(-2.8 * dy + 0.09 * dy * dy, -2.8 * 1.15 * dSp, 8.0),
+          a00985b: bond(-2.8 * dy + 0.08 * dy * dy, -2.8 * 0.25 * dSp, 5.5),
+          a00865b: bond(-0.45 * dy, 0, 4.0)
+        };
+
+        var pTot = 0, wY = 0, bW = 0, bDS = 0;
+        for (var i = 0; i < ASSETS.length; i++) {
+          var a = ASSETS[i], wp = clp(w[a.k], 0, 100), wt = wp / 100;
+          pTot += wt * res[a.k].tot; wY += wt * a.carry;
+          if (a.type === 'bond') { bW += wp; bDS += wp * a.dur; }
+        }
+        return { fx: sfx, fxR: fxR, a: res, p: { tot: clp(pTot, -98, 500), wY: sn(wY, 0), dur: bW > 0 ? sn(bDS / bW, 0) : 0, usd: Math.round(bW) } };
+      }
+
+      // 質押三模式精算
+      function calcPledge(pTot, wY, cfg) {
+        var mv = clp(cfg.mv, MIN_MV, MAX_MV), l1 = Math.round(clp(cfg.loan, 1, Math.max(1, Math.floor(mv * 0.95))));
+        var r = clp(l1 / mv, 0.0001, 0.95), ltv = r * 100;
+        var tCol = mv, tLoan = l1, lev = 1, rows = [];
+
+        if (cfg.mode === 'A') { lev = tCol / Math.max(1, mv - l1); }
+        else if (cfg.mode === 'B') { tCol = mv + l1; lev = 1 + r; }
+        else {
+          var N = clp(Math.round(cfg.lay), 2, 10), rLast = cfg.end === 'reinv', dn = cfg.inf ? 6 : N;
+          for (var k = 1; k <= dn; k++) {
+            var ac = k === 1 ? mv : mv * Math.pow(r, k - 1), nl = mv * Math.pow(r, k);
+            var g = (1 - Math.pow(r, k)) / (1 - r), cl = mv * r * g, cc = rLast ? (mv + cl) : (mv * g);
+            rows.push({ lbl: 'L' + k, ac: ac, nl: nl, cc: cc, cl: cl, rt: cl > 0 ? (cc / cl) * 100 : 0 });
+          }
+          if (cfg.inf) {
+            var ig = 1 / (1 - r); tCol = mv * ig; tLoan = mv * r * ig; lev = ig;
+            rows.push({ lbl: '∞', ac: 0, nl: 0, cc: tCol, cl: tLoan, rt: (tCol / tLoan) * 100 });
+          } else {
+            var gn = (1 - Math.pow(r, N)) / (1 - r); tLoan = mv * r * gn;
+            tCol = rLast ? (mv + tLoan) : (mv * gn); lev = tCol / mv;
+          }
+        }
+
+        var bRat = tLoan > 0 ? sn((tCol / tLoan) * 100, 0) : 0;
+        var cNow = Math.max(0, tCol * (1 + clp(pTot, -98, 500) / 100));
+        var rat = tLoan > 0 ? sn((cNow / tLoan) * 100, 0) : 0;
+        var callMv = tLoan * 1.3, bufY = cNow - callMv, bufP = cNow > 0 ? clp((bufY / cNow) * 100, -100, 99.9) : -100;
+        var c130 = Math.max(0, tLoan - cNow / 1.3), c166 = Math.max(0, tLoan - cNow / 1.66);
+        var col130 = Math.max(0, callMv - cNow), exL = rat > 166.67 ? Math.max(0, cNow * 0.6 - tLoan) : 0;
+        var inc = tCol * (sn(wY, 0) / 100), intr = tLoan * (clp(cfg.rate, 0.1, 9.9) / 100);
+        var net = inc - intr, cov = intr > 0 ? sn(inc / intr, 0) : 0;
+        var eqR = mv > 0 ? ((cNow - tCol) / mv) * 100 : 0, remEq = cNow - tLoan;
+
+        var stO = { cls: 'st-safe', txt: '🟢 安全', vc: 'pos' };
+        if (rat < 130) stO = { cls: 'st-call', txt: '🔴 追繳', vc: 'neg' };
+        else if (rat < clp(cfg.alrt, 135, 160)) stO = { cls: 'st-high', txt: '🟠 高風險', vc: 'org' };
+        else if (rat < 160) stO = { cls: 'st-warn', txt: '🟡 警戒', vc: 'amb' };
+
+        return { mv: mv, l1: l1, ltv: ltv, tCol: tCol, tLoan: tLoan, bRat: bRat, lev: lev, rows: rows,
+          cNow: cNow, rat: rat, callMv: callMv, bufY: bufY, bufP: bufP, c130: c130, c166: c166,
+          col130: col130, exL: exL, inc: inc, intr: intr, net: net, cov: cov, eqR: eqR, remEq: remEq, st: stO };
+      }
+
+      function solveR(tR, cfg) {
+        var R = clp(tR, 1.05, 50);
+        if (cfg.mode === 'A') return clp(1 / R, 0.01, 0.95);
+        if (cfg.mode === 'B') return clp(1 / Math.max(0.05, R - 1), 0.01, 0.95);
+        if (cfg.inf || cfg.end === 'cash') return clp(1 / R, 0.01, 0.95);
+        var N = clp(Math.round(cfg.lay), 2, 10), f = function (r) { return 1 + (1 - r) / (r * (1 - Math.pow(r, N))); };
+        var lo = 0.01, hi = 0.95;
+        if (R >= f(lo)) return lo; if (R <= f(hi)) return hi;
+        for (var i = 0; i < 36; i++) { var m = (lo + hi) / 2; if (f(m) > R) lo = m; else hi = m; }
+        return (lo + hi) / 2;
+      }
+      function applyBaseRat(raw) {
+        var r = solveR(clp(raw, 105, 5000) / 100, st.p);
+        if (st.p.rev === 'loan') {
+          var mv = clp(st.p.mv, MIN_MV, MAX_MV);
+          st.p.loan = Math.round(clp(mv * r, 1, Math.max(1, Math.floor(mv * 0.95))));
+        } else {
+          var l1 = Math.max(1, Math.round(st.p.loan));
+          st.p.mv = Math.round(clp(l1 / r, MIN_MV, MAX_MV));
+          var mx = Math.max(1, Math.floor(st.p.mv * 0.95));
+          if (st.p.loan > mx) st.p.loan = mx;
+        }
+        sched();
+      }
+
+      // SVG 繪圖
+      var XT = [1, 20, 32, 50, 75, 99], FXS = [1, 5, 10, 15, 20, 26, 30, 32, 35, 40, 50, 62, 75, 87, 99];
+      function svgWrap(w, h, s) { return '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ' + w + ' ' + h + '" width="100%" height="' + h + '" style="display:block;width:100%;height:auto;">' + s + '</svg>'; }
+
+      function drawBars(m) {
+        var box = $('svg-bars'); if (!box) return;
+        var rows = ASSETS.map(function (a) { return { lbl: a.full, col: a.col, v: sn(m.a[a.k].tot, 0), p: false }; });
+        rows.push({ lbl: '自訂投資組合（總計）', col: '#f8fafc', v: sn(m.p.tot, 0), p: true });
+        var W = 440, px = 10, pt = 8, pb = 22, rh = 38, H = pt + rows.length * rh + pb, pw = W - px * 2, zx = px + pw / 2, mx = 15;
+        for (var i = 0; i < rows.length; i++) mx = Math.max(mx, Math.abs(rows[i].v));
+        mx *= 1.15;
+        var s = '<line x1="' + zx.toFixed(1) + '" y1="' + pt + '" x2="' + zx.toFixed(1) + '" y2="' + (H - pb) + '" stroke="#475569" stroke-width="1.2" stroke-dasharray="3,3"/>';
+        [-mx, -mx / 2, 0, mx / 2, mx].forEach(function (t) {
+          var tx = clp(zx + (t / mx) * (pw / 2), px + 16, W - px - 16);
+          s += '<text x="' + tx.toFixed(1) + '" y="' + (H - 6) + '" fill="#94a3b8" font-size="11.5" text-anchor="middle">' + (t === 0 ? '0%' : (t > 0 ? '+' : '') + Math.round(t) + '%') + '</text>';
+        });
+        rows.forEach(function (r, j) {
+          var y = pt + j * rh, vc = r.v > 0.05 ? '#22c55e' : r.v < -0.05 ? '#f43f5e' : '#f8fafc';
+          var fl = r.p ? (r.v >= 0 ? '#f59e0b' : '#ef4444') : (r.v >= 0 ? '#10b981' : '#f43f5e');
+          var bw = clp(Math.abs(r.v / mx) * (pw / 2), 2.5, pw / 2), bx = r.v >= 0 ? zx : zx - bw;
+          s += '<circle cx="' + (px + 4) + '" cy="' + (y + 10) + '" r="4" fill="' + r.col + '"/>';
+          s += '<text x="' + (px + 14) + '" y="' + (y + 14) + '" fill="#f8fafc" font-size="12.5" font-weight="700">' + r.lbl + '</text>';
+          s += '<text x="' + (W - px) + '" y="' + (y + 14) + '" fill="' + vc + '" font-size="13" font-weight="800" text-anchor="end">' + fPct(r.v) + '</text>';
+          s += '<rect x="' + px + '" y="' + (y + 20) + '" width="' + pw + '" height="10" rx="5" fill="#172236"/>';
+          s += '<rect x="' + bx.toFixed(1) + '" y="' + (y + 20) + '" width="' + bw.toFixed(1) + '" height="10" rx="5" fill="' + fl + '"/>';
+        });
+        box.innerHTML = svgWrap(W, H, s);
+      }
+
+      function drawLines(cfx) {
+        var box = $('svg-lines'); if (!box) return;
+        var ser = [{ k: 'port', col: '#fff', d: '5,3', w: 2.8, v: [] }].concat(ASSETS.map(function (a) { return { k: a.k, col: a.col, d: '', w: 2, v: [] }; }));
+        FXS.forEach(function (f) {
+          var m = calcModel(f, st.y, st.div, st.sp, st.carry, st.w, st.p.swan);
+          ser[0].v.push(clp(m.p.tot, -100, 300));
+          ASSETS.forEach(function (a, i) { ser[i + 1].v.push(clp(m.a[a.k].tot, -100, 300)); });
+        });
+        var mn = -40, mx = 40;
+        ser.forEach(function (sr) { if (st.vis[sr.k]) sr.v.forEach(function (x) { mn = Math.min(mn, x); mx = Math.max(mx, x); }); });
+        mn -= 8; mx += 8; var sp = Math.max(20, mx - mn);
+        var W = 440, H = 200, pl = 48, pr = 12, pt = 16, pb = 26, pw = W - pl - pr, ph = H - pt - pb;
+        var xO = function (f) { return pl + ((clp(f, MIN_FX, MAX_FX) - MIN_FX) / (MAX_FX - MIN_FX)) * pw; };
+        var yO = function (v) { return pt + ((mx - clp(v, mn, mx)) / sp) * ph; };
+        var s = '';
+        for (var g = 0; g <= 4; g++) {
+          var gv = mn + (sp * g) / 4, gy = yO(gv);
+          s += '<line x1="' + pl + '" y1="' + gy.toFixed(1) + '" x2="' + (W - pr) + '" y2="' + gy.toFixed(1) + '" stroke="#1e293b"/>';
+          s += '<text x="' + (pl - 5) + '" y="' + (gy + 4).toFixed(1) + '" fill="#94a3b8" font-size="11.5" text-anchor="end">' + (gv > 0 ? '+' : '') + Math.round(gv) + '%</text>';
+        }
+        if (mn < 0 && mx > 0) { var zy = yO(0); s += '<line x1="' + pl + '" y1="' + zy.toFixed(1) + '" x2="' + (W - pr) + '" y2="' + zy.toFixed(1) + '" stroke="#475569" stroke-dasharray="3,3"/>'; }
+        XT.forEach(function (t) { s += '<text x="' + xO(t).toFixed(1) + '" y="' + (H - 6) + '" fill="#cbd5e1" font-size="12" font-weight="700" text-anchor="middle">' + t + '</text>'; });
+        ser.forEach(function (sr) {
+          if (!st.vis[sr.k]) return;
+          var pts = FXS.map(function (f, i) { return xO(f).toFixed(1) + ',' + yO(sr.v[i]).toFixed(1); }).join(' ');
+          s += '<polyline fill="none" stroke="' + sr.col + '" stroke-width="' + sr.w + '"' + (sr.d ? ' stroke-dasharray="' + sr.d + '"' : '') + ' points="' + pts + '"/>';
+        });
+        var cx = xO(cfx);
+        s += '<line x1="' + cx.toFixed(1) + '" y1="' + pt + '" x2="' + cx.toFixed(1) + '" y2="' + (H - pb) + '" stroke="#fff" stroke-width="1.5" stroke-dasharray="4,3"/>';
+        s += '<rect x="' + clp(cx - 26, pl, W - pr - 52).toFixed(1) + '" y="' + pt + '" width="52" height="19" rx="4" fill="#0f172a" stroke="#38bdf8"/>';
+        s += '<text x="' + clp(cx, pl + 26, W - pr - 26).toFixed(1) + '" y="' + (pt + 13) + '" fill="#38bdf8" font-size="11.5" font-weight="800" text-anchor="middle">' + cfx.toFixed(1) + '</text>';
+        box.innerHTML = svgWrap(W, H, s);
+      }
+
+      function drawPledge(cfx) {
+        var box = $('svg-pledge'); if (!box) return;
+        var rs = [], mn = 100, mx = Math.max(220, st.p.alrt + 25);
+        FXS.forEach(function (f) {
+          var m = calcModel(f, st.y, st.div, st.sp, st.carry, st.w, st.p.swan);
+          var r = clp(calcPledge(m.p.tot, m.p.wY, st.p).rat, 0, 500);
+          rs.push(r); mn = Math.min(mn, r); mx = Math.max(mx, r);
+        });
+        mn = clp(mn - 15, 0, 120); mx = clp(mx + 15, 180, 500); var sp = Math.max(40, mx - mn);
+        var W = 440, H = 200, pl = 48, pr = 12, pt = 16, pb = 26, pw = W - pl - pr, ph = H - pt - pb;
+        var xO = function (f) { return pl + ((clp(f, MIN_FX, MAX_FX) - MIN_FX) / (MAX_FX - MIN_FX)) * pw; };
+        var yO = function (v) { return pt + ((mx - clp(v, mn, mx)) / sp) * ph; };
+        var y130 = yO(130), yAl = yO(st.p.alrt);
+        var s = '<rect x="' + pl + '" y="' + y130.toFixed(1) + '" width="' + pw + '" height="' + Math.max(0, H - pb - y130).toFixed(1) + '" fill="rgba(239,68,68,.14)"/>';
+        for (var g = 0; g <= 4; g++) {
+          var gv = mn + (sp * g) / 4, gy = yO(gv);
+          s += '<line x1="' + pl + '" y1="' + gy.toFixed(1) + '" x2="' + (W - pr) + '" y2="' + gy.toFixed(1) + '" stroke="#1e293b"/>';
+          s += '<text x="' + (pl - 5) + '" y="' + (gy + 4).toFixed(1) + '" fill="#94a3b8" font-size="11.5" text-anchor="end">' + Math.round(gv) + '%</text>';
+        }
+        XT.forEach(function (t) { s += '<text x="' + xO(t).toFixed(1) + '" y="' + (H - 6) + '" fill="#cbd5e1" font-size="12" font-weight="700" text-anchor="middle">' + t + '</text>'; });
+        s += '<line x1="' + pl + '" y1="' + y130.toFixed(1) + '" x2="' + (W - pr) + '" y2="' + y130.toFixed(1) + '" stroke="#ef4444" stroke-width="2" stroke-dasharray="5,3"/>';
+        s += '<text x="' + (W - pr - 4) + '" y="' + (y130 - 5).toFixed(1) + '" fill="#ef4444" font-size="11.5" font-weight="800" text-anchor="end">130% 追繳線</text>';
+        s += '<line x1="' + pl + '" y1="' + yAl.toFixed(1) + '" x2="' + (W - pr) + '" y2="' + yAl.toFixed(1) + '" stroke="#f59e0b" stroke-width="1.6" stroke-dasharray="4,3"/>';
+        s += '<text x="' + (W - pr - 4) + '" y="' + (yAl - 5).toFixed(1) + '" fill="#f59e0b" font-size="11.5" font-weight="800" text-anchor="end">警戒 ' + st.p.alrt + '%</text>';
+        var pts = FXS.map(function (f, i) { return xO(f).toFixed(1) + ',' + yO(rs[i]).toFixed(1); }).join(' ');
+        s += '<polyline fill="none" stroke="#38bdf8" stroke-width="2.8" points="' + pts + '"/>';
+        var cx = xO(cfx);
+        s += '<line x1="' + cx.toFixed(1) + '" y1="' + pt + '" x2="' + cx.toFixed(1) + '" y2="' + (H - pb) + '" stroke="#fff" stroke-width="1.5" stroke-dasharray="4,3"/>';
+        s += '<rect x="' + clp(cx - 26, pl, W - pr - 52).toFixed(1) + '" y="' + pt + '" width="52" height="19" rx="4" fill="#0f172a" stroke="#38bdf8"/>';
+        s += '<text x="' + clp(cx, pl + 26, W - pr - 26).toFixed(1) + '" y="' + (pt + 13) + '" fill="#38bdf8" font-size="11.5" font-weight="800" text-anchor="middle">' + cfx.toFixed(1) + '</text>';
+        box.innerHTML = svgWrap(W, H, s);
+      }
+
+      // 股債分拆耐震跌幅提醒
+      function drawSplit(m, pm) {
+        var tl = Math.max(1, sn(pm.tLoan, 1)), fl = tl * 1.3, items = [], cEq = 0, cBd = 0;
+        ASSETS.forEach(function (a) {
+          var wp = clp(st.w[a.k], 0, 100), nv = Math.max(0, pm.tCol * (wp / 100) * (1 + clp(sn(m.a[a.k].tot, 0), -98, 500) / 100));
+          items.push({ a: a, wp: wp, nv: nv });
+          if (a.type === 'stock') cEq += nv; else cBd += nv;
+        });
+        var cNow = cEq + cBd, buf = cNow - fl, dAll = cNow > 0 ? (buf / cNow) * 100 : 0;
+        if (buf <= 0) { sCls('sp-ov', 'sov dng'); sTxt('sp-ov', '🚨 已觸發 130% 追繳（缺口 ' + fMon(Math.abs(buf), false) + '），無下跌緩衝空間'); }
+        else { sCls('sp-ov', 'sov'); sTxt('sp-ov', '✅ 股債同步下跌，平均還可再跌 -' + dAll.toFixed(1) + '%（安全緩衝 ' + fMon(buf, false) + '）'); }
+
+        function cCard(ttl, gv, ov, ol, acc) {
+          var sh = cNow > 0 ? (gv / cNow) * 100 : 0;
+          if (gv <= 0.5) return '<div class="kbox"><div class="klbl"><span style="color:' + acc + ';font-weight:800;">' + ttl + '</span><span>0%</span></div><div class="kval mut" style="font-size:16px;">未配置</div></div>';
+          if (buf <= 0) return '<div class="kbox" style="border-color:rgba(239,68,68,.5);"><div class="klbl"><span style="color:' + acc + ';font-weight:800;">' + ttl + '</span><span>佔' + sh.toFixed(0) + '%</span></div><div class="kval neg" style="font-size:16px;">0.0% 已追繳</div></div>';
+          var d = (buf / gv) * 100;
+          if (d >= 100) return '<div class="kbox" style="border-color:rgba(34,197,94,.45);"><div class="klbl"><span style="color:' + acc + ';font-weight:800;">' + ttl + '</span><span>佔' + sh.toFixed(0) + '%</span></div><div class="kval pos" style="font-size:15px;"><span class="pill st-safe">跌歸零仍安全</span></div><div class="ksub">靠' + ol + '維持 ' + ((ov / tl) * 100).toFixed(0) + '%</div></div>';
+          var bc = d < 15 ? 'var(--red)' : d < 30 ? 'var(--amb)' : 'var(--grn)', vc = d < 15 ? 'neg' : d < 30 ? 'amb' : 'pos';
+          return '<div class="kbox"><div class="klbl"><span style="color:' + acc + ';font-weight:800;">' + ttl + '</span><span>佔' + sh.toFixed(0) + '%</span></div><div class="kval ' + vc + '" style="font-size:18px;">可再跌 -' + d.toFixed(1) + '%</div><div class="btrack"><div class="bfill" style="width:' + clp(d, 2, 100).toFixed(1) + '%;background:' + bc + ';"></div></div></div>';
+        }
+        sHtm('sp-cmp', cCard('股票類合計', cEq, cBd, '債券', '#e879f9') + cCard('債券類合計', cBd, cEq, '股票', '#38bdf8'));
+
+        sHtm('sp-rows', items.map(function (it) {
+          if (it.wp <= 0 || it.nv <= 0.5) return '<div class="sitem dim"><div class="row-between"><span class="aname"><i class="dot" style="background:' + it.a.col + ';"></i>' + it.a.full + '</span><span class="mut">未配置</span></div></div>';
+          var sh = cNow > 0 ? (it.nv / cNow) * 100 : 0, d = (buf / it.nv) * 100;
+          var dh = buf <= 0 ? '<strong class="neg">已追繳</strong>' : (d >= 100 ? '<span class="pill st-safe">跌歸零仍安全</span>' : '<strong class="' + (d < 15 ? 'neg' : d < 30 ? 'amb' : 'pos') + '">單獨可跌 -' + d.toFixed(1) + '%</strong>');
+          return '<div class="sitem"><div class="row-between"><span class="aname"><i class="dot" style="background:' + it.a.col + ';"></i>' + it.a.full + '</span>' + dh + '</div><div class="row-between mut" style="font-size:12.5px;margin-top:3px;"><span>佔壓測總市值 ' + sh.toFixed(1) + '%</span><span class="cyan">壓測約 ' + fMon(it.nv, false) + '</span></div></div>';
+        }).join(''));
+
+        var cA = cEq <= 0.5 ? '無股票部位' : (buf - cBd * 0.1 <= 0 ? '債券先跌10%即<strong class="neg">追繳</strong>' : ((buf - cBd * 0.1) / cEq * 100 >= 100 ? '債券先跌10%，股票<strong class="pos">跌歸零仍安全</strong>' : '債券先跌10%，股票仍可跌 <strong class="amb">-' + ((buf - cBd * 0.1) / cEq * 100).toFixed(1) + '%</strong>'));
+        var cB = cBd <= 0.5 ? '無債券部位' : (buf - cEq * 0.2 <= 0 ? '股票先跌20%即<strong class="neg">追繳</strong>' : ((buf - cEq * 0.2) / cBd * 100 >= 100 ? '股票先跌20%，債券<strong class="pos">跌歸零仍安全</strong>' : '股票先跌20%，債券仍可跌 <strong class="amb">-' + ((buf - cEq * 0.2) / cBd * 100).toFixed(1) + '%</strong>'));
+        sHtm('sp-xhint', '💡 <strong>股債聯動：</strong>' + cA + '；' + cB + '。');
+      }
+
+      // 靜態 UI 與權重歸一化
+      function buildUI() {
+        sHtm('preset-btns', PRESETS.map(function (p) {
+          return '<button type="button" class="btn ' + (p.s3 ? 's3 ' : '') + (p.id === st.preset ? 'act' : '') + '" data-pr="' + p.id + '">' + p.name + '</button>';
+        }).join(''));
+        sHtm('mix-btns', MIXES.map(function (m, i) {
+          return '<button type="button" class="btn ' + (m.s3 ? 's3 ' : '') + (i === 0 ? 'act' : '') + '" data-mx="' + i + '">' + m.name + '</button>';
+        }).join(''));
+        sHtm('w-list', ASSETS.map(function (a) {
+          return '<div class="wblk"><div class="row-between"><span class="aname"><i class="dot" style="background:' + a.col + ';"></i>' + a.full + '</span><span class="nwrap"><input type="text" inputmode="decimal" value="' + st.w[a.k] + '" data-wn="' + a.k + '" class="ninp xs cyan" aria-label="' + a.full + '權重" /><span class="unit">%</span></span></div><input type="range" min="0" max="100" step="1" value="' + st.w[a.k] + '" data-w="' + a.k + '" /></div>';
+        }).join(''));
+        var legs = [{ k: 'port', lbl: '自訂投資組合', col: '#fff' }].concat(ASSETS.map(function (a) { return { k: a.k, lbl: a.full, col: a.col }; }));
+        sHtm('c-legs', legs.map(function (l) {
+          return '<button type="button" class="lpill ' + (st.vis[l.k] ? '' : 'off') + '" data-ln="' + l.k + '"><i class="dot" style="background:' + l.col + ';width:8px;height:8px;"></i>' + l.lbl + '</button>';
+        }).join(''));
+      }
+
+      function setW(ck, nv) {
+        var v = clp(Math.round(sn(nv, 0)), 0, 100), rem = 100 - v, oth = [], os = 0;
+        ASSETS.forEach(function (a) { if (a.k !== ck) { oth.push(a.k); os += clp(st.w[a.k], 0, 100); } });
+        st.w[ck] = v;
+        if (rem === 0) oth.forEach(function (k) { st.w[k] = 0; });
+        else if (os <= 0) { var lf = rem; oth.forEach(function (k, i) { var sh = i === oth.length - 1 ? lf : Math.floor(rem / oth.length); st.w[k] = sh; lf -= sh; }); }
+        else { var al = 0; oth.forEach(function (k, i) { if (i === oth.length - 1) st.w[k] = Math.max(0, rem - al); else { var sh = Math.round((st.w[k] / os) * rem); st.w[k] = sh; al += sh; } }); }
+        document.querySelectorAll('#mix-btns .btn').forEach(function (b) { b.classList.remove('act'); });
+        sched();
+      }
+
+      function mLbl() { return st.p.mode === 'A' ? '模式A' : st.p.mode === 'B' ? '模式B' : '模式C(' + (st.p.inf ? '∞' : st.p.lay + '層') + ')'; }
+      function sched() { if (!rafId) rafId = requestAnimationFrame(function () { rafId = 0; render(); }); }
+
+      // 同步渲染全三分頁
+      function render() {
+        try {
+          var fx = clp(st.fx, MIN_FX, MAX_FX);
+          var m = calcModel(fx, st.y, st.div, st.sp, st.carry, st.w, st.p.swan);
+          var pm = calcPledge(m.p.tot, m.p.wY, st.p);
+
+          // 頂部匯率區
+          sTxt('top-fx', fx.toFixed(2)); sTxt('top-fx-pct', fPct(m.fxR)); sCls('top-fx-pct', cVal(m.fxR));
+          var zt = '中性震盪', zc = 'pill st-warn';
+          if (fx < 28) { zt = '極端強升'; zc = 'pill st-cyan'; }
+          else if (fx < 30.5) { zt = '台幣偏強'; zc = 'pill st-safe'; }
+          else if (fx > 36) { zt = '極端貶值'; zc = 'pill st-call'; }
+          else if (fx > 33) { zt = '貶值壓力'; zc = 'pill st-high'; }
+          sTxt('top-fx-zone', zt); sCls('top-fx-zone', zc);
+          var ptr = $('fx-ptr'); if (ptr) ptr.style.left = clp(((fx - MIN_FX) / (MAX_FX - MIN_FX)) * 100, 0, 100) + '%';
+
+          sTxt('t-pret', fPct(m.p.tot)); sCls('t-pret', 'kval ' + cVal(m.p.tot));
+          sTxt('t-carry', st.carry ? '含息收' : '不含息');
+          sTxt('t-psub', '息收 ' + m.p.wY.toFixed(2) + '% · 存續 ' + m.p.dur.toFixed(1) + '年');
+          sTxt('t-prat', pm.rat.toFixed(1) + '%'); sCls('t-prat', 'kval ' + pm.st.vc);
+          sTxt('t-pbdg', pm.st.txt); sCls('t-pbdg', 'pill ' + pm.st.cls);
+          sTxt('t-prsub', mLbl() + ' · ' + (pm.rat < 130 ? '破線 ' + (130 - pm.rat).toFixed(1) + 'pp' : '可跌 ' + pm.bufP.toFixed(1) + '%'));
+          sTxt('m-sum', 'DXY ' + st.dxy.toFixed(1) + ' · 10Y ' + (st.y > 0 ? '+' : '') + st.y + 'bp · 背離 ' + (st.div > 0 ? '+' : '') + st.div.toFixed(1) + ' · 利差 ' + (st.sp > 0 ? '+' : '') + st.sp + 'bp');
+
+          syS($('s-fx'), fx.toFixed(2)); syT($('n-fx'), fx.toFixed(2));
+          syS($('s-dxy'), st.dxy); syT($('n-dxy'), st.dxy.toFixed(1));
+          syS($('s-y'), st.y); syT($('n-y'), String(st.y));
+          syS($('s-div'), st.div.toFixed(1)); syT($('n-div'), st.div.toFixed(1));
+          syS($('s-sp'), st.sp); syT($('n-sp'), String(st.sp));
+          if ($('chk-carry')) $('chk-carry').checked = st.carry;
+          document.querySelectorAll('#preset-btns .btn').forEach(function (b) { b.classList.toggle('act', b.dataset.pr === st.preset); });
+
+          // 分頁一：標的卡片、權重與圖表一二
+          sHtm('asset-cards', ASSETS.map(function (a) {
+            var r = m.a[a.k], ch = st.carry ? (a.k === 'a00865b' ? '<span class="em"><strong>不配息累積 ' + fPct(r.c) + '</strong></span>' : '<span class="amb">息 <strong>' + fPct(r.c) + '</strong></span>') : '<span>息 未計入</span>';
+            var fh = a.k === 'a2330'
+              ? '<span>美元營收匯兌 <strong class="' + cVal(r.fx) + '">' + fPct(r.fx) + '</strong></span><span>外資籌碼(1.3×) <strong class="' + cVal(r.cr) + '">' + fPct(r.cr) + '</strong></span><span>估值/利差 <strong class="' + cVal(r.rt) + '">' + fPct(r.rt) + '</strong></span>' + ch
+              : (a.type === 'stock'
+                ? '<span>匯兌 <strong class="' + cVal(r.fx) + '">' + fPct(r.fx) + '</strong></span><span>估值 <strong class="' + cVal(r.rt) + '">' + fPct(r.rt) + '</strong></span><span>籌碼/利差 <strong class="' + cVal(r.cr) + '">' + fPct(r.cr) + '</strong></span>' + ch
+                : '<span>匯 <strong class="' + cVal(r.fx) + '">' + fPct(r.fx) + '</strong></span><span>率 <strong class="' + cVal(r.rt) + '">' + fPct(r.rt) + '</strong></span><span>利差 <strong class="' + cVal(r.cr) + '">' + fPct(r.cr) + '</strong></span>' + ch);
+            return '<div class="acard num"><div class="row-between"><div class="aname"><i class="dot" style="background:' + a.col + ';"></i><span>' + a.full + '</span></div><div class="aret ' + cVal(r.tot) + '">' + fPct(r.tot) + '</div></div><div class="arow2">' + fh + '</div></div>';
+          }).join(''));
+
+          ASSETS.forEach(function (a) {
+            syS(document.querySelector('input[data-w="' + a.k + '"]'), st.w[a.k]);
+            syT(document.querySelector('input[data-wn="' + a.k + '"]'), String(st.w[a.k]));
+          });
+          sTxt('sum-y', m.p.wY.toFixed(2) + '%'); sTxt('sum-d', m.p.dur.toFixed(1) + ' 年'); sTxt('sum-u', m.p.usd + '%');
+          drawBars(m); drawLines(fx);
+
+          // 分頁二：質押壓測
+          sCls('pm-a', 'btn ' + (st.p.mode === 'A' ? 'act' : ''));
+          sCls('pm-b', 'btn ' + (st.p.mode === 'B' ? 'act' : ''));
+          sCls('pm-c', 'btn ' + (st.p.mode === 'C' ? 'act-red' : ''));
+          sTxt('m-desc', st.p.mode === 'A' ? '模式 A：帳上實額／單次場外，維持率嚴格 = C ÷ L 防灌水。'
+            : st.p.mode === 'B' ? '模式 B：單次質押再投入併入擔保不再續借，維持率 = (E₀+L₁) ÷ L₁。'
+            : '模式 C：循環套娃 N 層幾何級數精算，揭露維持率隨層數收斂至 1/r 與高槓桿風險。');
+          if ($('l-panel')) $('l-panel').classList.toggle('show', st.p.mode === 'C');
+
+          sTxt('l-mv', st.p.mode === 'A' ? '擔保品總市值' : '原始自有本金 E₀');
+          sTxt('l-ltv', st.p.mode === 'A' ? '借款成數' : '單層成數 r');
+          sTxt('l-loan', st.p.mode === 'A' ? '借款金額' : '首層借款 L₁');
+
+          syS($('ps-lay'), st.p.lay); syT($('pn-lay'), st.p.inf ? '∞' : String(st.p.lay));
+          sCls('b-inf', 'btn ' + (st.p.inf ? 'act-red' : ''));
+          sCls('b-ereinv', 'btn ' + (st.p.end === 'reinv' ? 'act-red' : ''));
+          sCls('b-ecash', 'btn ' + (st.p.end === 'cash' ? 'act-amb' : ''));
+          sHtm('l-tbody', pm.rows.map(function (r) {
+            return '<tr><td>' + r.lbl + '</td><td class="cyan">' + (r.ac > 0 ? fMon(r.ac) : '→0') + '</td><td class="amb">' + (r.nl > 0 ? fMon(r.nl) : '→0') + '</td><td>' + fMon(r.cc) + '</td><td class="neg">' + fMon(r.cl) + '</td><td class="' + (r.rt < 130 ? 'neg' : r.rt < 166.67 ? 'org' : 'pos') + '">' + r.rt.toFixed(1) + '%</td></tr>';
+          }).join(''));
+
+          syS($('ps-mv'), mvToL(st.p.mv)); syT($('pn-mv'), String(Math.round(st.p.mv))); sTxt('r-mv', '約 ' + fMon(st.p.mv));
+          var ld = Math.abs(pm.ltv - Math.round(pm.ltv)) < 0.05 ? String(Math.round(pm.ltv)) : pm.ltv.toFixed(1);
+          syS($('ps-ltv'), clp(pm.ltv, 10, 60).toFixed(1)); syT($('pn-ltv'), ld);
+          if ($('ltv-w')) $('ltv-w').style.display = pm.ltv > 60.05 ? 'inline-block' : 'none';
+          syT($('pn-loan'), String(Math.round(pm.l1))); sTxt('r-loan', '約 ' + fMon(pm.l1));
+
+          syS($('ps-rat'), clp(Math.round(pm.bRat), 110, 500)); syT($('pn-rat'), pm.bRat.toFixed(2));
+          sTxt('v-bf', '基準：' + fMon(pm.tCol) + ' ÷ ' + fMon(pm.tLoan) + ' = ' + pm.bRat.toFixed(1) + '%');
+          if (pm.bRat < 130) { sCls('v-bb', 'pill st-call'); sTxt('v-bb', '<130% 追繳'); }
+          else if (pm.bRat < 166.67) { sCls('v-bb', 'pill st-high'); sTxt('v-bb', '既倉警戒'); }
+          else { sCls('v-bb', 'pill st-safe'); sTxt('v-bb', '≥166.7% 新貸'); }
+          var dp = pm.rat - pm.bRat;
+          sTxt('v-sf', '壓測：' + fMon(pm.cNow) + ' ÷ ' + fMon(pm.tLoan) + ' = ' + pm.rat.toFixed(1) + '%');
+          sTxt('v-sd', (dp > 0.005 ? '+' : '') + dp.toFixed(1) + 'pp'); sCls('v-sd', dp > 0.05 ? 'pos' : dp < -0.05 ? 'neg' : 'mut');
+
+          var la = $('l-alert');
+          if (la) {
+            if (st.p.mode !== 'A') {
+              la.classList.add('show');
+              la.innerHTML = '⚠️ 總槓桿 <strong>' + pm.lev.toFixed(2) + 'x</strong>，自有本金淨值報酬 <strong>' + fPct(pm.eqR) + '</strong>（剩餘淨值 ' + (pm.remEq <= 0 ? '負債 ' + fMon(Math.abs(pm.remEq)) : fMon(pm.remEq)) + '）';
+            } else la.classList.remove('show');
+          }
+
+          syS($('ps-rate'), st.p.rate.toFixed(2)); syT($('pn-rate'), st.p.rate.toFixed(2));
+          syS($('ps-alrt'), st.p.alrt); syT($('pn-alrt'), String(st.p.alrt));
+          syS($('ps-swan'), st.p.swan); syT($('pn-swan'), String(st.p.swan));
+
+          sTxt('pk-bdg', pm.st.txt); sCls('pk-bdg', 'pill ' + pm.st.cls);
+          sTxt('pk-rat', pm.rat.toFixed(1) + '%'); sCls('pk-rat', 'kval ' + pm.st.vc);
+          sTxt('pk-rsub', '基準 ' + pm.bRat.toFixed(1) + '% · 現值 ' + fMon(pm.cNow));
+          sTxt('pk-lev', '槓桿 ' + pm.lev.toFixed(2) + 'x');
+          sTxt('pk-buf', pm.rat >= 130 ? '可跌 ' + pm.bufP.toFixed(1) + '%' : '破線 ' + (130 - pm.rat).toFixed(1) + 'pp');
+          sCls('pk-buf', 'kval ' + (pm.rat >= 130 ? 'cyan' : 'neg'));
+          sTxt('pk-bsub', '追繳門檻 ' + fMon(pm.callMv) + (pm.rat >= 130 ? ' · 餘 ' + fMon(pm.bufY) : ''));
+
+          if (pm.rat < 130) {
+            sTxt('pk-albl', '追繳補繳試算'); sTxt('pk-act', '還 ' + fMon(pm.c130)); sCls('pk-act', 'kval neg');
+            sTxt('pk-asub', '回166%需 ' + fMon(pm.c166) + ' · 補股 ' + fMon(pm.col130));
+          } else if (pm.rat > 166.67) {
+            sTxt('pk-albl', '尚可增貸空間'); sTxt('pk-act', fMon(pm.exL, true)); sCls('pk-act', 'kval pos');
+            sTxt('pk-asub', '以 60% 成數上限估算');
+          } else {
+            sTxt('pk-albl', '警戒緩衝區'); sTxt('pk-act', '暫無增貸'); sCls('pk-act', 'kval amb');
+            sTxt('pk-asub', '拉回166%需還 ' + fMon(pm.c166));
+          }
+          sTxt('pk-cov', pm.cov.toFixed(2) + 'x'); sCls('pk-cov', pm.cov >= 1 ? 'amb' : 'neg');
+          sTxt('pk-net', fMon(pm.net, true)); sCls('pk-net', 'kval ' + (pm.net >= 0 ? 'pos' : 'neg'));
+          sTxt('pk-nsub', '年息 ' + fMon(pm.inc) + ' − 利息 ' + fMon(pm.intr));
+
+          drawSplit(m, pm); drawPledge(fx);
+
+          // 分頁三：極端矩陣
+          sTxt('mx-tag', '套用：' + mLbl());
+          sHtm('mx-cards', EXTREMES.map(function (sc) {
+            var sm = calcModel(sc.fx, sc.y, sc.div, sc.sp, st.carry, st.w, sc.swan);
+            var spm = calcPledge(sm.p.tot, sm.p.wY, st.p);
+            var bt = spm.rat < 130 ? '補 ' + fMon(spm.c130) : '可跌 ' + spm.bufP.toFixed(1) + '%';
+            return '<div class="mcard ' + (spm.rat < 130 ? 'dng' : '') + ' num"><div class="row-between" style="margin-bottom:7px;"><strong style="font-size:14.5px;color:#f8fafc;">' + sc.name + '</strong><span class="pill ' + spm.st.cls + '">' + spm.st.txt + '</span></div><div class="grid2"><div class="mitem"><span class="mut">預估市值</span><strong class="cyan">' + fMon(spm.cNow) + '</strong></div><div class="mitem"><span class="mut">組合報酬</span><strong class="' + cVal(sm.p.tot) + '">' + fPct(sm.p.tot) + '</strong></div><div class="mitem"><span class="mut">壓測維持率</span><strong class="' + spm.st.vc + '">' + spm.rat.toFixed(1) + '%</strong></div><div class="mitem"><span class="mut">防線／補繳</span><strong class="' + (spm.rat < 130 ? 'neg' : 'pos') + '">' + bt + '</strong></div></div></div>';
+          }).join(''));
+        } catch (e) { showErr(e); }
+      }
+
+      function bindNum(el, mn, mx, dec, fn) {
+        if (!el) return;
+        el.addEventListener('input', function () { var v = pNum(el.value); if (Number.isFinite(v)) fn(clp(v, mn, mx)); });
+        var fin = function () {
+          var v = pNum(el.value), c = clp(Number.isFinite(v) ? v : mn, mn, mx);
+          var f = dec > 0 ? Number(c.toFixed(dec)) : Math.round(c);
+          fn(f); el.value = dec > 0 ? f.toFixed(dec) : String(f);
+        };
+        el.addEventListener('blur', fin);
+        el.addEventListener('keydown', function (e) { if (e.key === 'Enter') { fin(); el.blur(); } });
+      }
+
+      function bindEvents() {
+        var mk = function (e) { if (e.target && e.target.tagName === 'INPUT' && e.target.type === 'range') activeSliderId = skey(e.target); };
+        var clr = function () { activeSliderId = null; };
+        ['pointerdown', 'mousedown', 'touchstart'].forEach(function (ev) { document.addEventListener(ev, mk, true); });
+        ['pointerup', 'mouseup', 'touchend', 'change'].forEach(function (ev) { document.addEventListener(ev, clr, true); });
+
+        on('s-fx', 'input', function (e) { applyFx(parseFloat(e.target.value)); });
+        bindNum($('n-fx'), MIN_FX, MAX_FX, 2, applyFx);
+        document.querySelectorAll('button[data-fx]').forEach(function (b) { b.addEventListener('click', function () { applyFx(st.fx + parseFloat(b.dataset.fx)); }); });
+        on('b-fx32', 'click', function () { applyFx(32); });
+
+        on('preset-btns', 'click', function (e) {
+          var b = e.target.closest('button[data-pr]'); if (!b) return;
+          var p = PRESETS.find(function (x) { return x.id === b.dataset.pr; }); if (!p) return;
+          st.dxy = p.dxy; st.y = p.y; st.div = p.div; st.sp = p.sp; st.fx = fxCalc(p.dxy, p.div); st.preset = p.id; sched();
+        });
+
+        on('s-dxy', 'input', function (e) { st.dxy = parseFloat(e.target.value); st.fx = fxCalc(st.dxy, st.div); st.preset = null; sched(); });
+        bindNum($('n-dxy'), 70, 130, 1, function (v) { st.dxy = v; st.fx = fxCalc(st.dxy, st.div); st.preset = null; sched(); });
+        on('s-y', 'input', function (e) { st.y = parseInt(e.target.value, 10); st.preset = null; sched(); });
+        bindNum($('n-y'), -300, 300, 0, function (v) { st.y = Math.round(v); st.preset = null; sched(); });
+        on('s-div', 'input', function (e) { st.div = parseFloat(e.target.value); st.fx = fxCalc(st.dxy, st.div); st.preset = null; sched(); });
+        bindNum($('n-div'), -10, 10, 1, function (v) { st.div = v; st.fx = fxCalc(st.dxy, st.div); st.preset = null; sched(); });
+        on('s-sp', 'input', function (e) { st.sp = parseInt(e.target.value, 10); st.preset = null; sched(); });
+        bindNum($('n-sp'), -150, 400, 0, function (v) { st.sp = Math.round(v); st.preset = null; sched(); });
+        on('chk-carry', 'change', function (e) { st.carry = e.target.checked; sched(); });
+
+        document.querySelectorAll('.tbtn').forEach(function (b) {
+          b.addEventListener('click', function () {
+            st.tab = b.dataset.tab;
+            document.querySelectorAll('.tbtn').forEach(function (x) { x.classList.toggle('act', x === b); });
+            document.querySelectorAll('.tpanel').forEach(function (p) { p.classList.toggle('act', p.id === st.tab); });
+            render();
+          });
+        });
+
+        on('mix-btns', 'click', function (e) {
+          var b = e.target.closest('button[data-mx]'); if (!b) return;
+          var mx = MIXES[parseInt(b.dataset.mx, 10)]; if (!mx) return;
+          ASSETS.forEach(function (a, i) { st.w[a.k] = mx.w[i]; });
+          document.querySelectorAll('#mix-btns .btn').forEach(function (x) { x.classList.toggle('act', x === b); });
+          sched();
+        });
+        on('w-list', 'input', function (e) {
+          if (e.target.dataset && e.target.dataset.w) setW(e.target.dataset.w, parseInt(e.target.value, 10));
+          else if (e.target.dataset && e.target.dataset.wn) { var v = pNum(e.target.value); if (Number.isFinite(v)) setW(e.target.dataset.wn, v); }
+        });
+        on('w-list', 'blur', function (e) {
+          if (e.target.dataset && e.target.dataset.wn) {
+            var k = e.target.dataset.wn, v = pNum(e.target.value);
+            setW(k, clp(Math.round(Number.isFinite(v) ? v : st.w[k]), 0, 100));
+            e.target.value = String(st.w[k]);
+          }
+        }, true);
+        on('w-list', 'keydown', function (e) { if (e.key === 'Enter' && e.target.dataset && e.target.dataset.wn) e.target.blur(); });
+
+        on('c-legs', 'click', function (e) {
+          var b = e.target.closest('button[data-ln]'); if (!b) return;
+          st.vis[b.dataset.ln] = !st.vis[b.dataset.ln]; b.classList.toggle('off', !st.vis[b.dataset.ln]); sched();
+        });
+
+        on('pm-a', 'click', function () { st.p.mode = 'A'; sched(); });
+        on('pm-b', 'click', function () { st.p.mode = 'B'; sched(); });
+        on('pm-c', 'click', function () { st.p.mode = 'C'; sched(); });
+        on('ps-lay', 'input', function (e) { st.p.inf = false; st.p.lay = clp(parseInt(e.target.value, 10), 2, 10); sched(); });
+        bindNum($('pn-lay'), 2, 10, 0, function (v) { st.p.inf = false; st.p.lay = clp(Math.round(v), 2, 10); sched(); });
+        on('b-inf', 'click', function () { st.p.inf = !st.p.inf; sched(); });
+        on('b-ereinv', 'click', function () { st.p.end = 'reinv'; sched(); });
+        on('b-ecash', 'click', function () { st.p.end = 'cash'; sched(); });
+
+        var cLoan = function () { var mL = Math.max(1, Math.floor(st.p.mv * 0.95)); if (st.p.loan > mL) st.p.loan = mL; };
+        on('ps-mv', 'input', function (e) { st.p.mv = lToMv(parseInt(e.target.value, 10)); cLoan(); sched(); });
+        bindNum($('pn-mv'), MIN_MV, MAX_MV, 0, function (v) { st.p.mv = clp(Math.round(v), MIN_MV, MAX_MV); cLoan(); sched(); });
+        on('ps-ltv', 'input', function (e) { st.p.loan = Math.max(1, Math.round(st.p.mv * (clp(parseFloat(e.target.value), 10, 60) / 100))); sched(); });
+        bindNum($('pn-ltv'), 1, 95, 1, function (v) { st.p.loan = Math.max(1, Math.round(st.p.mv * (v / 100))); sched(); });
+
+        var le = $('pn-loan');
+        if (le) {
+          le.addEventListener('input', function () { var v = pNum(le.value); if (Number.isFinite(v) && v > 0) { st.p.loan = Math.round(clp(v, 1, Math.max(1, Math.floor(st.p.mv * 0.95)))); sched(); } });
+          var fL = function () { var mL = Math.max(1, Math.floor(st.p.mv * 0.95)), v = pNum(le.value), cl = Math.round(clp(Number.isFinite(v) ? v : Math.round(st.p.mv * 0.1), 1, mL)); st.p.loan = cl; le.value = String(cl); sched(); };
+          le.addEventListener('blur', fL);
+          le.addEventListener('keydown', function (e) { if (e.key === 'Enter') { fL(); le.blur(); } });
+        }
+
+        on('ps-rat', 'input', function (e) { applyBaseRat(parseFloat(e.target.value)); });
+        bindNum($('pn-rat'), 105, 5000, 2, applyBaseRat);
+        on('b-rloan', 'click', function () { st.p.rev = 'loan'; sCls('b-rloan', 'btn act'); sCls('b-rmv', 'btn'); });
+        on('b-rmv', 'click', function () { st.p.rev = 'mv'; sCls('b-rmv', 'btn act'); sCls('b-rloan', 'btn'); });
+
+        on('ps-rate', 'input', function (e) { st.p.rate = clp(parseFloat(e.target.value), 0.1, 9.9); sched(); });
+        bindNum($('pn-rate'), 0.1, 9.9, 2, function (v) { st.p.rate = v; sched(); });
+        on('ps-alrt', 'input', function (e) { st.p.alrt = clp(parseInt(e.target.value, 10), 135, 160); sched(); });
+        bindNum($('pn-alrt'), 135, 160, 0, function (v) { st.p.alrt = Math.round(v); sched(); });
+        on('ps-swan', 'input', function (e) { st.p.swan = clp(parseInt(e.target.value, 10), -40, 0); sched(); });
+        bindNum($('pn-swan'), -40, 0, 0, function (v) { st.p.swan = Math.round(v); sched(); });
+      }
+
+      function boot() { try { buildUI(); bindEvents(); render(); } catch (e) { showErr(e); } }
+      if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);
+      else boot();
+    })();
+  </script>
+</body>
+</html>
